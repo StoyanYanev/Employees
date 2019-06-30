@@ -6,6 +6,7 @@
 EmpID, ProjectID, DateFrom, DateTo
 
 _Примерни данни:_
+
 143, 12, 2013- 11 - 01, 2014 - 01 - 05
 218, 10, 2012- 05 - 16, NULL
 143, 10, 2009- 01 - 01, 2011- 04 - 27
@@ -23,10 +24,10 @@ _Примерни данни:_
 да тръгне и да покаже резултата в конзола
 5) Да бъде спазен “code convention”, в зависимост на какъв език се разбработва
 програмата:
-a. Java - (http://www.oracle.com/technetwork/java/codeconvtoc-136057.html )
+    a. Java - (http://www.oracle.com/technetwork/java/codeconvtoc-136057.html )
 6) Решение на задачата да бъде сложено в github
-a. Repository Name да бъде „FirstName-LastName-employees (т.е. ivan-ivanov-
-employess)
+    a. Repository Name да бъде „FirstName-LastName-employees (т.е. ivan-ivanov-
+    employess)
 7) Да бъде направена в рамките на един ден.
 ```
 
