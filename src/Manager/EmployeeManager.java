@@ -1,6 +1,8 @@
 package Manager;
 
 import Employees.IEmployee;
+import PeriodCalculation.IPeriodCalculator;
+import PeriodCalculation.PeriodCalculator;
 import Reader.IReader;
 import Reader.Reader;
 import javafx.util.Pair;
@@ -8,17 +10,15 @@ import javafx.util.Pair;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class EmployeeManager implements IEmployeeManager {
 
     private IReader employeeReader;
-    private Map<Pair<String, String>, Long> employeesWorkingTogether;
-    private List<IEmployee> employees;
+    private IPeriodCalculator periodCalculator;
 
     public EmployeeManager() {
         this.employeeReader = new Reader();
-        this.employeesWorkingTogether = new HashMap<>();
+        this.periodCalculator = new PeriodCalculator();
     }
 
     /**
@@ -29,16 +29,17 @@ public class EmployeeManager implements IEmployeeManager {
      */
     @Override
     public void findTheLongestPartnershipPeriod() throws IOException, ParseException {
+        Map<Pair<String, String>, Long> employeesWorkingTogether = new HashMap<>();
         // get list of employees
-        this.employees = this.employeeReader.readEmployees();
+        List<IEmployee> employees = this.employeeReader.readEmployees();
 
-        this.calculatePartnershipPeriod();
+        this.calculatePartnershipPeriod(employees, employeesWorkingTogether);
 
         long maxPeriod = Long.MIN_VALUE;
         Pair<String, String> partnership = new Pair<>(null, null);
         long period;
-        for (Pair<String, String> pair : this.employeesWorkingTogether.keySet()) {
-            period = this.employeesWorkingTogether.get(pair);
+        for (Pair<String, String> pair : employeesWorkingTogether.keySet()) {
+            period = employeesWorkingTogether.get(pair);
             if (period > maxPeriod) {
                 maxPeriod = period;
                 partnership = pair;
@@ -53,20 +54,23 @@ public class EmployeeManager implements IEmployeeManager {
 
     /**
      * Helper function for calculating the period
+     *
+     * @param employees                from file
+     * @param employeesWorkingTogether
      */
-    private void calculatePartnershipPeriod() {
+    private void calculatePartnershipPeriod(List<IEmployee> employees, Map<Pair<String, String>, Long> employeesWorkingTogether) {
         IEmployee firstEmployee;
         IEmployee secondEmployee;
         boolean isSameEmployee;
         boolean isSameProject;
-        for (int i = 0; i < this.employees.size(); i++) {
-            firstEmployee = this.employees.get(i);
-            for (int j = i + 1; j < this.employees.size(); j++) {
-                secondEmployee = this.employees.get(j);
+        for (int i = 0; i < employees.size(); i++) {
+            firstEmployee = employees.get(i);
+            for (int j = i + 1; j < employees.size(); j++) {
+                secondEmployee = employees.get(j);
                 isSameEmployee = firstEmployee.getEmployeeID().equals(secondEmployee.getEmployeeID());
                 isSameProject = firstEmployee.getProjectID().equals(secondEmployee.getProjectID());
                 if (!isSameEmployee && isSameProject) {
-                    this.savePair(firstEmployee, secondEmployee);
+                    this.savePair(firstEmployee, secondEmployee, employeesWorkingTogether);
                 }
             }
         }
@@ -77,53 +81,22 @@ public class EmployeeManager implements IEmployeeManager {
      *
      * @param firstEmployee
      * @param secondEmployee
+     * @param employeesWorkingTogether
      */
-    private void savePair(IEmployee firstEmployee, IEmployee secondEmployee) {
-        long period = this.getPeriod(firstEmployee, secondEmployee);
+    private void savePair(IEmployee firstEmployee, IEmployee secondEmployee, Map<Pair<String, String>, Long> employeesWorkingTogether) {
+        long period = this.periodCalculator.getPeriod(firstEmployee, secondEmployee);
         Pair<String, String> pair = new Pair<>(firstEmployee.getEmployeeID(), secondEmployee.getEmployeeID());
         Pair<String, String> reversedPair = new Pair<>(secondEmployee.getEmployeeID(), firstEmployee.getEmployeeID());
 
-        if (this.employeesWorkingTogether.containsKey(pair)) {
-            long newPeriod = this.employeesWorkingTogether.get(pair) + period;
-            this.employeesWorkingTogether.put(pair, newPeriod);
+        if (employeesWorkingTogether.containsKey(pair)) {
+            long newPeriod = employeesWorkingTogether.get(pair) + period;
+            employeesWorkingTogether.put(pair, newPeriod);
             return;
-        } else if (this.employeesWorkingTogether.containsKey(reversedPair)) {
-            long newPeriod = this.employeesWorkingTogether.get(reversedPair) + period;
-            this.employeesWorkingTogether.put(reversedPair, newPeriod);
+        } else if (employeesWorkingTogether.containsKey(reversedPair)) {
+            long newPeriod = employeesWorkingTogether.get(reversedPair) + period;
+            employeesWorkingTogether.put(reversedPair, newPeriod);
             return;
         }
-        this.employeesWorkingTogether.put(pair, period);
-    }
-
-    /**
-     * Calculate period between two employees and checks for overlapping
-     * Used formula for overlapping: max(min(EndDate1, EndDate2) - max(StartDate1, StartDate2), 0)
-     *
-     * @param firstEmployee
-     * @param secondEmployee
-     * @return period in days
-     */
-    private Long getPeriod(IEmployee firstEmployee, IEmployee secondEmployee) {
-        Date minEndDate = this.getMinDateTo(firstEmployee.getDateTo(), secondEmployee.getDateTo());
-        Date maxStartDate = this.getMaxDateFrom(firstEmployee.getDateFrom(), secondEmployee.getDateFrom());
-        long days = minEndDate.getTime() - maxStartDate.getTime();
-        if (days > 0) {
-            return TimeUnit.DAYS.convert(days, TimeUnit.MILLISECONDS);
-        }
-        return 0L;
-    }
-
-    private Date getMinDateTo(Date firstEndPeriod, Date secondEndPeriod) {
-        if (firstEndPeriod.before(secondEndPeriod)) {
-            return firstEndPeriod;
-        }
-        return secondEndPeriod;
-    }
-
-    private Date getMaxDateFrom(Date firstStartPeriod, Date secondStartPeriod) {
-        if (firstStartPeriod.after(secondStartPeriod)) {
-            return firstStartPeriod;
-        }
-        return secondStartPeriod;
+        employeesWorkingTogether.put(pair, period);
     }
 }

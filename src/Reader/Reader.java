@@ -26,12 +26,6 @@ public class Reader implements IReader {
 
     private static final String PATTERN = "yyyy-MM-dd";
 
-    private List<IEmployee> employees;
-
-    public Reader() {
-        this.employees = new ArrayList<>();
-    }
-
     /**
      * Reads from file and make list of employees
      *
@@ -40,7 +34,7 @@ public class Reader implements IReader {
      * @throws InvalidFileFormatException
      */
     @Override
-    public List<IEmployee> readEmployees() throws IOException {
+    public List<IEmployee> readEmployees() throws IOException, ParseException {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Please, enter the absolute file's path: ");
         String filePath = bufferedReader.readLine();
@@ -49,6 +43,7 @@ public class Reader implements IReader {
         Scanner scanner = new Scanner(file);
         String fileContent;
         String[] splitContent;
+        List<IEmployee> employees = new ArrayList<>();
         SimpleDateFormat formatter = new SimpleDateFormat(PATTERN);
         while (scanner.hasNextLine()) {
             fileContent = scanner.nextLine();
@@ -56,10 +51,11 @@ public class Reader implements IReader {
             if (splitContent.length < MAX_COLUMN) {
                 throw new InvalidFileFormatException("Invalid file format!");
             }
-            this.parseData(splitContent, formatter);
+            IEmployee newEmployee = this.parseData(splitContent, formatter);
+            employees.add(newEmployee);
         }
         bufferedReader.close();
-        return this.employees;
+        return employees;
     }
 
     /**
@@ -67,24 +63,23 @@ public class Reader implements IReader {
      *
      * @param splitContent contains information for employee
      * @param formatter    of date
+     * @return created employee
+     * @throws ParseException
      */
-    private void parseData(String[] splitContent, SimpleDateFormat formatter) {
+    private IEmployee parseData(String[] splitContent, SimpleDateFormat formatter) throws ParseException {
         String employeeID = splitContent[POSITION_OF_THE_EMPLOYEE_ID].trim();
         String projectID = splitContent[POSITION_OF_THE_PROJECT_ID].trim();
         String dateFrom = splitContent[POSITION_OF_THE_DATE_FROM].trim();
         String dateTo = splitContent[POSITION_OF_THE_DATE_TO].trim();
         Date from = null;
         Date to = null;
-        try {
-            from = formatter.parse(dateFrom);
-            // if dateTo is NULL then in the constructor of the Employee will be set the current date
-            if (!dateTo.toUpperCase().equals("NULL")) {
-                to = formatter.parse(splitContent[POSITION_OF_THE_DATE_TO]);
-            }
-        } catch (ParseException e) {
-            e.printStackTrace();
+
+        from = formatter.parse(dateFrom);
+        // if dateTo is NULL then in the constructor of the Employee will be set the current date
+        if (!dateTo.toUpperCase().equals("NULL")) {
+            to = formatter.parse(splitContent[POSITION_OF_THE_DATE_TO]);
         }
-        IEmployee newEmployee = new Employee(employeeID, projectID, from, to);
-        this.employees.add(newEmployee);
+
+        return new Employee(employeeID, projectID, from, to);
     }
 }
